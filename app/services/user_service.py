@@ -29,9 +29,15 @@ async def public_users(db: AsyncSession, users: Sequence[User]) -> list[UserPubl
     responses = []
     for user in users:
         roles = sorted(role_map[user.id], key=priority)
-        responses.append(UserPublic.model_validate(user).model_copy(
-            update={"roles": roles, "role": roles[0] if roles else None}
-        ))
+        # Do not let attribute validation touch User.roles: it is a lazy ORM
+        # relationship, whereas this response exposes role names from our query.
+        payload = {
+            name: getattr(user, name)
+            for name in UserPublic.model_fields
+            if name not in {"role", "roles"}
+        }
+        payload.update(roles=roles, role=roles[0] if roles else None)
+        responses.append(UserPublic.model_validate(payload))
     return responses
 
 

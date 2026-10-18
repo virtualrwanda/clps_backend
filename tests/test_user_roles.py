@@ -14,8 +14,14 @@ from app.db.session import get_db
 from app.services.user_service import public_users
 
 
+class UserWithUnloadedRoles(SimpleNamespace):
+    @property
+    def roles(self):
+        raise AssertionError("Serializing a user must not load the ORM roles relationship")
+
+
 def make_user(email="info@vrt.rw"):
-    return SimpleNamespace(
+    return UserWithUnloadedRoles(
         id=uuid4(), email=email, first_name="Test", last_name="Account",
         school_name=None, current_grade_id=None, country=None, status="active",
         email_verified_at=None, created_at=None,
