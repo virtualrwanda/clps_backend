@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     # --- OTP login ---
     login_otp_ttl_seconds: int = 600
     login_otp_max_attempts: int = 5
-    login_otp_length: int = 6
+    login_otp_length: int = 8
     login_otp_return_code_in_response: bool = True
 
     # --- Business defaults ---

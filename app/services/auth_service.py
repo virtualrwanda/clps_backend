@@ -1,5 +1,5 @@
 """
-Auth service — register, password authenticate, OTP login, change password.
+Auth service â€” register, password authenticate, OTP login, change password.
 
 Timezone rule: never compare datetimes directly. Use app.core.timeutils.
 """
@@ -89,7 +89,7 @@ class AuthService:
         if requested_role is None:
             raise HTTPException(
                 status.HTTP_500_INTERNAL_SERVER_ERROR,
-                f"Role '{role}' missing from database — run seed_rbac",
+                f"Role '{role}' missing from database â€” run seed_rbac",
             )
         db.add(UserRole(user_id=user.id, role_id=requested_role.id))
 
@@ -182,7 +182,7 @@ class AuthService:
 
         if challenge.attempt_count >= _settings.login_otp_max_attempts:
             challenge.consumed_at = now
-            await db.flush()
+            await db.commit()
             raise HTTPException(
                 status.HTTP_429_TOO_MANY_REQUESTS,
                 "Too many incorrect attempts. Request a new code.",
@@ -191,7 +191,10 @@ class AuthService:
         expected_hash = _hash_otp(code.strip())
         if not hmac.compare_digest(expected_hash, challenge.code_hash):
             challenge.attempt_count += 1
-            await db.flush()
+            if challenge.attempt_count >= _settings.login_otp_max_attempts:
+                challenge.consumed_at = now
+            # Persist failed attempts before the request dependency rolls back.
+            await db.commit()
             remaining = _settings.login_otp_max_attempts - challenge.attempt_count
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,

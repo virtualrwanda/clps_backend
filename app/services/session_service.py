@@ -1,5 +1,5 @@
 """
-Session service — no Redis.
+Session service â€” no Redis.
 
 Storage model:
   - PostgreSQL `sessions` table: durable record, admin-visible, audit trail
@@ -127,11 +127,7 @@ class SessionService:
         token_hash = hash_token(token)
         cache_key = self._key(token_hash)
 
-        cached = _cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        # Slow path: DB lookup
+        # Check durable revocation on every request, including cached tokens.
         from app.db.session import AsyncSessionLocal
 
         async with AsyncSessionLocal() as db:
@@ -145,10 +141,12 @@ class SessionService:
             ).scalar_one_or_none()
 
             if row is None:
+                _cache.delete(cache_key)
                 return None
 
             # FIX: normalize before comparing
             if is_past(row.expires_at):
+                _cache.delete(cache_key)
                 return None
 
             now = utcnow()
