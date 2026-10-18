@@ -17,6 +17,7 @@ from app.schemas.auth import (
     RegisterRequest,
     VerifyLoginOTPRequest,
 )
+from app.services.user_service import public_user
 from app.schemas.user import UserPublic
 from app.services.auth_service import AuthService
 
@@ -37,7 +38,7 @@ async def register(payload: RegisterRequest, db: DBSession) -> UserPublic:
         country=payload.country,
         role=payload.role,
     )
-    return UserPublic.model_validate(user)
+    return await public_user(db, user)
 
 
 @router.post("/login", response_model=LoginOTPResponse)
@@ -92,7 +93,7 @@ async def verify_login_otp(
         max_age=_settings.session_ttl_seconds,
         path="/",
     )
-    return UserPublic.model_validate(user)
+    return await public_user(db, user)
 
 
 @router.post("/logout", response_model=MessageResponse)
@@ -114,8 +115,8 @@ async def logout(
 
 
 @router.get("/me", response_model=UserPublic)
-async def me(user: CurrentUser) -> UserPublic:
-    return UserPublic.model_validate(user)
+async def me(user: CurrentUser, db: DBSession) -> UserPublic:
+    return await public_user(db, user)
 
 
 @router.post("/change-password", response_model=MessageResponse)

@@ -23,6 +23,7 @@ from app.models.audit import AuditLog
 from app.models.rbac import Permission, Role, RolePermission, UserRole
 from app.models.system_settings import SystemSetting
 from app.models.user import User
+from app.services.user_service import public_user, public_users
 from app.schemas.user import UserPublic
 from app.services.audit_service import AuditService
 
@@ -104,7 +105,7 @@ async def list_users(db: DBSession, limit: int = 100, offset: int = 0) -> list[U
             select(User).where(User.deleted_at.is_(None)).limit(limit).offset(offset)
         )
     ).scalars().all()
-    return [UserPublic.model_validate(u) for u in rows]
+    return await public_users(db, rows)
 
 
 @router.post(
@@ -133,7 +134,7 @@ async def suspend_user(
         new_value={"status": "suspended"},
         ip_address=request.client.host if request.client else None,
     )
-    return UserPublic.model_validate(target)
+    return await public_user(db, target)
 
 
 @router.post(
@@ -161,7 +162,7 @@ async def activate_user(
         new_value={"status": "active"},
         ip_address=request.client.host if request.client else None,
     )
-    return UserPublic.model_validate(target)
+    return await public_user(db, target)
 
 
 @router.post(

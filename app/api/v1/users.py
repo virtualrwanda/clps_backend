@@ -10,6 +10,7 @@ from app.core.deps import (
     require_permissions,
 )
 from app.models.user import User
+from app.services.user_service import public_user, public_users
 from app.schemas.user import UserPublic, UserUpdateSelf
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -26,7 +27,7 @@ async def list_users(db: DBSession, limit: int = 50, offset: int = 0) -> list[Us
             select(User).where(User.deleted_at.is_(None)).limit(limit).offset(offset)
         )
     ).scalars().all()
-    return [UserPublic.model_validate(u) for u in rows]
+    return await public_users(db, rows)
 
 
 @router.get("/{user_id}", response_model=UserPublic)
@@ -38,7 +39,7 @@ async def get_user(user_id: UUID, db: DBSession, me: CurrentUser) -> UserPublic:
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
-    return UserPublic.model_validate(user)
+    return await public_user(db, user)
 
 
 @router.patch("/me", response_model=UserPublic)
@@ -49,4 +50,4 @@ async def update_me(payload: UserUpdateSelf, db: DBSession, me: CurrentUser) -> 
     for field, value in data.items():
         setattr(me, field, value)
     await db.flush()
-    return UserPublic.model_validate(me)
+    return await public_user(db, me)

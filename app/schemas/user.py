@@ -9,6 +9,8 @@ class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     email: EmailStr
+    role: str | None = None
+    roles: list[str] = Field(default_factory=list)
     first_name: str
     last_name: str
     school_name: str | None
