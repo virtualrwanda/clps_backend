@@ -1,0 +1,54 @@
+# Paid compute and disk are required here to retain uploaded CVs.
+# Review Render's quoted cost before applying this Blueprint.
+services:
+  - type: web
+    name: clh-backend
+    repo: https://github.com/virtualrwanda/clps_backend
+    runtime: docker
+    region: singapore
+    plan: 0.5c-512mb
+    numInstances: 1
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    preDeployCommand: alembic upgrade head && python -m scripts.seed_rbac
+    autoDeployTrigger: "off"
+    disk:
+      name: clh-uploads
+      mountPath: /app/uploads
+      sizeGB: 1
+    envVars:
+      - key: ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_SYNC
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SESSION_COOKIE_SAMESITE
+        value: lax
+      - key: LOGIN_OTP_LENGTH
+        value: "8"
+      - key: LOGIN_OTP_RETURN_CODE_IN_RESPONSE
+        value: "false"
+      - key: EMAIL_MOCK
+        value: "false"
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_STARTTLS
+        value: "true"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: MOMO_MOCK
+        value: "false"
+      - key: PAYPAL_MOCK
+        value: "false"
